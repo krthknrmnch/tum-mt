@@ -1,0 +1,764 @@
+openapi: 3.0.3
+info:
+  title: Network Measurement Platform - API
+  description: |-
+    This is the REST API for our application server based on the OpenAPI 3.0 specification. The API is subject to change during the development process.
+    
+    Useful links:
+    - [GitLab Repository](https://gitlab.lrz.de/cm/2023-karthiknarumanchi-mt)
+    - [Wiki on GitLab](https://gitlab.lrz.de/cm/2023-karthiknarumanchi-mt/-/wikis/home)
+  version: 0.6.0
+  contact:
+    email: karthik.narumanchi@tum.de
+servers:
+  - url: localhost:5000
+    description: Development server
+tags:
+  - name: Admin
+  - name: Auth
+  - name: Measurement
+  - name: Probe
+  - name: Result
+  - name: User
+paths:
+  /api/users:
+    put:
+      tags:
+      - User
+      summary: Update an existing user with a new password
+      operationId: updateUser
+      parameters:
+      - name: Email
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Current-Password
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: New-Password
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Update failed
+    post:
+      tags:
+      - Admin
+      summary: "Create a new user with email, password, and isAdmin properties"
+      operationId: register
+      parameters:
+      - name: Email
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Password
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: isAdmin
+        in: header
+        required: true
+        schema:
+          type: boolean
+      responses:
+        "401":
+          description: Registration failed
+        "200":
+          description: OK
+      security:
+      - Bearer_Authentication: []
+    delete:
+      tags:
+      - User
+      summary: Delete an existing user
+      operationId: deleteUser
+      parameters:
+      - name: Email
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Password
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Delete failed
+  /api/probes:
+    get:
+      tags:
+      - Probe
+      summary: Get all probes with a filter on country and probe status
+      operationId: getAllProbes
+      parameters:
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - CONNECTED
+          - RUNNING
+          - DISCONNECTED
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "403":
+          description: Forbidden
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbesResponseObject'
+      security:
+      - Bearer_Authentication: []
+    post:
+      tags:
+      - Admin
+      summary: Create a new probe
+      operationId: createProbe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeRequestObject'
+        required: true
+      responses:
+        "200":
+          description: OK
+      security:
+      - Bearer_Authentication: []
+  /api/measurements:
+    get:
+      tags:
+      - Measurement
+      summary: Get all measurements with a filter on type
+      operationId: getAllMeasurements
+      parameters:
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ARBITRARY
+          - DNS
+          - HTTP
+          - PING
+          - TRACEROUTE
+          - PARIS_TRACEROUTE
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "403":
+          description: Forbidden
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasurementsResponseObject'
+      security:
+      - Bearer_Authentication: []
+    post:
+      tags:
+      - Measurement
+      summary: Create a measurement
+      operationId: createMeasurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeasurementRequestObject'
+        required: true
+      responses:
+        "403":
+          description: Forbidden
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity - Measurement creation failed. Measurement/Probe
+            rate limits exceeded.
+      security:
+      - Bearer_Authentication: []
+  /api/users/request:
+    get:
+      tags:
+      - Auth
+      summary: Get a JWT token for user with email and password
+      operationId: requestToken
+      parameters:
+      - name: Email
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: Password
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Login failed
+        "200":
+          description: OK
+  /api/results/{measurementId}:
+    get:
+      tags:
+      - Result
+      summary: Get result for a measurement by the measurement's id
+      operationId: getResultByMeasurementId
+      parameters:
+      - name: measurementId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Result not found
+        "403":
+          description: Forbidden
+        "200":
+          description: OK
+          content:
+            application/octet-stream: {}
+      security:
+      - Bearer_Authentication: []
+  /api/probes/{probeId}:
+    get:
+      tags:
+      - Probe
+      summary: Get a probe by its id
+      operationId: getProbeById
+      parameters:
+      - name: probeId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Probe'
+        "403":
+          description: Forbidden
+        "404":
+          description: Probe not found
+      security:
+      - Bearer_Authentication: []
+  /api/probes/my:
+    get:
+      tags:
+      - Probe
+      summary: Get all probes for authenticated user with a filter on country and
+        probe status
+      operationId: getProbesForSelf
+      parameters:
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - CONNECTED
+          - RUNNING
+          - DISCONNECTED
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "403":
+          description: Forbidden
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbesResponseObject'
+      security:
+      - Bearer_Authentication: []
+  /api/probes/config/{probeId}:
+    get:
+      tags:
+      - Probe
+      summary: Download the docker-compose config file for a probe
+      operationId: getProbeHostFile
+      parameters:
+      - name: probeId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "403":
+          description: Forbidden
+        "404":
+          description: Probe not found
+        "200":
+          description: OK
+          content:
+            application/octet-stream: {}
+        "401":
+          description: Unauthorized
+      security:
+      - Bearer_Authentication: []
+  /api/measurements/{measurementId}:
+    get:
+      tags:
+      - Measurement
+      summary: Get a single measurement by its id
+      operationId: getByMeasurementId
+      parameters:
+      - name: measurementId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Measurement'
+        "404":
+          description: Measurement not found
+        "403":
+          description: Forbidden
+      security:
+      - Bearer_Authentication: []
+    delete:
+      tags:
+      - Measurement
+      summary: Stop an ongoing or scheduled measurement by its id
+      operationId: stopByMeasurementId
+      parameters:
+      - name: measurementId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Measurement not found
+        "403":
+          description: Forbidden
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - Bearer_Authentication: []
+  /api/measurements/my:
+    get:
+      tags:
+      - Measurement
+      summary: Get all measurements for authenticated user with a filter on type
+      operationId: getMeasurementsForSelf
+      parameters:
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ARBITRARY
+          - DNS
+          - HTTP
+          - PING
+          - TRACEROUTE
+          - PARIS_TRACEROUTE
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "403":
+          description: Forbidden
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasurementsResponseObject'
+      security:
+      - Bearer_Authentication: []
+components:
+  schemas:
+    Probe:
+      type: object
+      properties:
+        id:
+          type: string
+        ipv4:
+          type: string
+        country:
+          type: string
+        region:
+          type: string
+          enum:
+          - AF
+          - AS
+          - EU
+          - OC
+          - NA
+          - SA
+        status:
+          type: string
+          enum:
+          - CONNECTED
+          - RUNNING
+          - DISCONNECTED
+        description:
+          type: string
+        starlinkActiveInterface:
+          type: string
+        wifiInterfaceActive:
+          type: boolean
+        wiredInterfaceActive:
+          type: boolean
+        cellularInterfaceActive:
+          type: boolean
+    ArbitraryMeasurementSpecification:
+      required:
+      - containerImagePath
+      - durationInMinutes
+      - outputPath
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/MeasurementSpecification'
+      - type: object
+        properties:
+          durationInMinutes:
+            maximum: 60
+            minimum: 5
+            type: integer
+            format: int32
+          containerImagePath:
+            type: string
+          containerEntrypointString:
+            type: string
+          cmdInputStrings:
+            type: array
+            items:
+              type: string
+          envVars:
+            type: object
+            additionalProperties:
+              type: string
+          outputPath:
+            type: string
+          addLinuxNetworkAdminCapability:
+            type: boolean
+    DnsMeasurementSpecification:
+      required:
+      - target
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/MeasurementSpecification'
+      - type: object
+        properties:
+          target:
+            type: string
+    HttpMeasurementSpecification:
+      required:
+      - method
+      - target
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/MeasurementSpecification'
+      - type: object
+        properties:
+          target:
+            type: string
+          method:
+            type: string
+            enum:
+            - GET
+            - POST
+          queryString:
+            type: string
+    Measurement:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - ARBITRARY
+          - DNS
+          - HTTP
+          - PING
+          - TRACEROUTE
+          - PARIS_TRACEROUTE
+        measurementSpecification:
+          $ref: '#/components/schemas/MeasurementSpecification'
+        description:
+          type: string
+        scheduledStartTimestamp:
+          type: integer
+          format: int64
+        repeatSpecification:
+          $ref: '#/components/schemas/RepeatSpecification'
+        probeSpecification:
+          $ref: '#/components/schemas/ProbeSpecification'
+        status:
+          type: string
+          enum:
+          - SCHEDULED
+          - SCHEDULING_FAILED
+          - STOPPED
+          - COMPLETED
+    MeasurementSpecification:
+      type: object
+    ParisTracerouteMeasurementSpecification:
+      required:
+      - method
+      - target
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/MeasurementSpecification'
+      - type: object
+        properties:
+          target:
+            type: string
+          maxHops:
+            type: integer
+            format: int32
+          method:
+            type: string
+            enum:
+            - UDP
+            - ICMP
+            - TCP
+    PingMeasurementSpecification:
+      required:
+      - target
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/MeasurementSpecification'
+      - type: object
+        properties:
+          target:
+            type: string
+          numberOfPackets:
+            type: integer
+            format: int32
+          packetByteSize:
+            type: integer
+            format: int32
+    ProbeSpecification:
+      required:
+      - probeIds
+      type: object
+      properties:
+        probeIds:
+          type: array
+          items:
+            type: string
+    RepeatSpecification:
+      required:
+      - interval
+      - numberOfRepeats
+      type: object
+      properties:
+        numberOfRepeats:
+          maximum: 10
+          minimum: 0
+          type: integer
+          format: int32
+        interval:
+          minimum: 180
+          type: integer
+          format: int32
+    TracerouteMeasurementSpecification:
+      required:
+      - method
+      - target
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/MeasurementSpecification'
+      - type: object
+        properties:
+          target:
+            type: string
+          maxHops:
+            type: integer
+            format: int32
+          method:
+            type: string
+            enum:
+            - UDP
+            - ICMP
+            - TCP
+    ProbeRequestObject:
+      required:
+      - country
+      - description
+      - region
+      - userEmail
+      type: object
+      properties:
+        userEmail:
+          type: string
+        country:
+          type: string
+        region:
+          type: string
+          enum:
+          - AF
+          - AS
+          - EU
+          - OC
+          - NA
+          - SA
+        description:
+          type: string
+    MeasurementRequestObject:
+      required:
+      - description
+      - measurementSpecification
+      - probeSpecification
+      - repeatSpecification
+      - type
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - ARBITRARY
+          - DNS
+          - HTTP
+          - PING
+          - TRACEROUTE
+          - PARIS_TRACEROUTE
+        measurementSpecification:
+          oneOf:
+          - $ref: '#/components/schemas/ArbitraryMeasurementSpecification'
+          - $ref: '#/components/schemas/DnsMeasurementSpecification'
+          - $ref: '#/components/schemas/HttpMeasurementSpecification'
+          - $ref: '#/components/schemas/ParisTracerouteMeasurementSpecification'
+          - $ref: '#/components/schemas/PingMeasurementSpecification'
+          - $ref: '#/components/schemas/TracerouteMeasurementSpecification'
+        description:
+          type: string
+        repeatSpecification:
+          $ref: '#/components/schemas/RepeatSpecification'
+        probeSpecification:
+          $ref: '#/components/schemas/ProbeSpecification'
+    ProbesResponseObject:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int64
+        probeList:
+          type: array
+          items:
+            $ref: '#/components/schemas/Probe'
+        currentPage:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+    MeasurementsResponseObject:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int64
+        measurementList:
+          type: array
+          items:
+            $ref: '#/components/schemas/Measurement'
+        currentPage:
+          type: integer
+          format: int32
+        totalPages:
+          type: integer
+          format: int32
+  securitySchemes:
+    Bearer_Authentication:
+      type: http
+      description: A JWT token is required to access this API. JWT token can be obtained
+        from the auth/request API.
+      scheme: bearer
+      bearerFormat: JWT

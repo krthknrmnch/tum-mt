@@ -1,0 +1,33 @@
+# PREREQUISITES
+# 1. Please ensure you have docker, docker compose, and the sysbox runtime installed on your Linux machine. Take a look at https://github.com/nestybox/sysbox#installation for more information on installing the package.
+# 2. If CONNECTOR_IP_PORT is set to the string - "NO_CONNECTORS_RUNNING", then no active connector exists currently. Please try again later. If not, ignore this and proceed.
+# 3. Access to Starlink mobile app for enabling Location data access via the Main Screen -> SETTINGS -> ADVANCED -> DEBUG DATA -> STARLINK LOCATION
+# 4. Access to machine network interface information via the terminal command 'ifconfig'
+
+# INSTRUCTIONS for setting environment properties
+# 1. STARLINK_DISH_METRICS_COLLECTION - Can be set to true to enable dish metadata collection via Starlink's Dishy API. It is disabled by default.
+# 2. STARLINK_DISH_LOCATION_COLLECTION - Can be set to true to enable dish location collection via Starlink's Dishy API. It is disabled by default.
+# 3. IS_XXXXX_INTERFACE_ACTIVE - These three properties have to be set to true or false based on the network interfaces active on this machine
+# 4. STARLINK_ACTIVE_INTERFACE - This property takes one of these four values - [wired, wifi, cellular, none] - depending on which interface the Starlink connection is connected to
+
+# RUNNING the service
+# 1. Once you have set and verified the above properties, please run 'docker compose up' in a terminal to start the probe service
+
+version: "3.9"
+services:
+  probe-service:
+    image: cmnetworkplatform/probe-outer
+    runtime: sysbox-runc
+    container_name: probe-service
+    environment:
+      - STARLINK_DISH_METRICS_COLLECTION=false
+      - STARLINK_DISH_LOCATION_COLLECTION=false
+      - IS_WIRED_INTERFACE_ACTIVE=true
+      - IS_WIFI_INTERFACE_ACTIVE=false
+      - IS_CELLULAR_INTERFACE_ACTIVE=false
+      - STARLINK_ACTIVE_INTERFACE=none
+      - CONNECTOR_IP_PORT=_NO_CONNECTORS_RUNNING_
+      - PROBE_ID=PROBE_ID_STRING
+      - PROBE_API_KEY=PROBE_API_KEY_STRING
+    pull_policy: always
+    restart: always

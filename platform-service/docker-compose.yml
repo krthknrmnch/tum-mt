@@ -1,0 +1,11 @@
+# 1. This spins up the platform service on port 5000. Please ensure mongo is reachable on localhost:27017.
+version: "3.9"
+services:
+  platform-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: platform-service
+    container_name: platform-service
+    network_mode: "host"
+    restart: always

@@ -1,0 +1,31 @@
+# 1. This spins up the probe service container.
+# 2. This requires a valid PROBE_ID to be passed as an ENV variable. Please create one using the platform service and pass it on as an ENV variable.
+# 3. The CONNECTOR_IP_PORT and PROBE_API_KEY variables can be fetched from the API service's GET /probes/config/{probeId} endpoint
+# 4. The probe service also requires the sysbox runtime to be installed, and so, works only on Linux right now
+# ENV Vars - CONNECTOR_IP_PORT is this machine's IP PORT combination if you are running the connector service on this machine.
+# ENV Vars - PROBE_ID is the id referred to, in comment number 2 above.
+# ENV Vars - PROBE_API_KEY is referred to, in comment number 3 above.
+# ENV Vars - STARLINK_DISH_METRICS_COLLECTION set to either true or false enables or disables dish metadata collection via Starlink's Dishy API
+# ENV Vars - STARLINK_DISH_LOCATION_COLLECTION set to either true or false enables or disables dish location collection via Starlink's Dishy API
+# ENV Vars - The three IS_XXXXX_INTERFACE_ACTIVE properties have to be set to true or false based on the network interfaces active on this machine
+# ENV Vars - The STARLINK_ACTIVE_INTERFACE property takes one of these four values - [wired, wifi, cellular, none] - depending on which interface the Starlink connection is connected to
+version: "3.9"
+services:
+  probe-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: probe-service
+    runtime: sysbox-runc
+    container_name: probe-service
+    environment:
+      - CONNECTOR_IP_PORT=${CONNECTOR_IP_PORT}
+      - PROBE_ID=${PROBE_ID}
+      - PROBE_API_KEY=${PROBE_API_KEY}
+      - STARLINK_DISH_METRICS_COLLECTION=${STARLINK_DISH_METRICS_COLLECTION}
+      - STARLINK_DISH_LOCATION_COLLECTION=${STARLINK_DISH_LOCATION_COLLECTION}
+      - IS_WIRED_INTERFACE_ACTIVE=true
+      - IS_WIFI_INTERFACE_ACTIVE=false
+      - IS_CELLULAR_INTERFACE_ACTIVE=false
+      - STARLINK_ACTIVE_INTERFACE=none
+    restart: always

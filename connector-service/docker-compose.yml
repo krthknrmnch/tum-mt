@@ -1,0 +1,16 @@
+# 1. This spins up the connector service on port 3000. Please ensure mongo is reachable on localhost:27017.
+# ENV Vars - CONNECTOR_IP_PORT is this machine's IP PORT combination if you are running the connector service on this machine.
+# ENV Vars - CONNECTOR_REGION - One of EU, NA, SA, AS, OC, AF
+version: "3.9"
+services:
+  connector-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: connector-service
+    container_name: connector-service
+    network_mode: "host"
+    environment:
+      - CONNECTOR_IP_PORT=${CONNECTOR_IP_PORT}
+      - CONNECTOR_REGION=${CONNECTOR_REGION}
+    restart: always
